@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <title>LOL 精靈圖抽選</title>
+    <style>
+        #championIcon {
+            width: 48px;
+            height: 48px;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>抽一位英雄</h1>
+    <button id="drawButton">抽選</button>
+    <div id="result">尚未抽選</div>
+    <div id="championIcon"></div>
+
+    <script>
+        let championList = [];
+        let imageVersion = "15.10.1";
+
+        fetch('asset/dragontail/15.10.1/data/zh_TW/champion.json')
+            .then(res => res.json())
+            .then(json => {
+                championList = Object.values(json.data);
+                imageVersion = json.version;
+            });
+
+        const spriteBasePath = "asset/dragontail"; // 本地圖庫根路徑
+
+        document.getElementById("drawButton").addEventListener("click", () => {
+            if (championList.length === 0) return;
+
+            const selected = championList[Math.floor(Math.random() * championList.length)];
+            const { sprite, x, y } = selected.image;
+
+            const icon = document.getElementById("championIcon");
+
+            // 用本地路徑組合圖片位置
+            icon.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/sprite/${sprite})`;
+            icon.style.backgroundPosition = `-${x}px -${y}px`;
+
+            document.getElementById("result").textContent =
+                `你抽到的是：${selected.name}（${selected.title}）`;
+        });
+    </script>
+
+</body>
+
+</html>

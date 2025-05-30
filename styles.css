@@ -1,0 +1,6 @@
+.sprite {
+  width: 48px;
+  height: 48px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated; /* 讓像素感更清晰 */
+}
