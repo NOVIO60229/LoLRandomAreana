@@ -4,14 +4,7 @@
   margin-bottom: 16px;
 }
 
-.championIcon {
-  width: 48px;
-  height: 48px;
-  background-repeat: no-repeat;
-  image-rendering: pixelated;
-  margin-top: 10px;
-}
-
+.championIcon,
 .itemIcon {
   width: 48px;
   height: 48px;
@@ -19,8 +12,12 @@
   image-rendering: pixelated;
 }
 
-.item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
+.spellIcon,
+.runeIcon {
+  width: 48px;
+  height: 48px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  background-size: contain;
+  image-rendering: auto;
 }

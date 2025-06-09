@@ -5,102 +5,115 @@
     <meta charset="UTF-8">
     <title>LOL 精靈圖抽選</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .iconBox {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            margin-top: 16px;
+        }
+    </style>
 </head>
 
 <body>
 
-    <h1>抽一位英雄</h1>
+    <label for="mapSelect">選擇模式：</label>
+    <select id="mapSelect">
+        <option value="12">咆哮深淵</option>
+        <option value="11">召喚峽谷</option>
+        <option value="30">競技場</option>
+    </select>
+
     <button id="drawButton">抽選</button>
 
-    <div id="champion">
+    <div class="iconBox" id="iconBox">
         <div id="championIcon" class="championIcon"></div>
-        <div id="championText">尚未抽選</div>
-    </div>
-    
-    <div id="itemList">
-        <div class="item">
-            <div class="itemIcon"></div>
-            <span>裝備一：尚未抽選</span>
-        </div>
-        <div class="item">
-            <div class="itemIcon"></div>
-            <span>裝備二：尚未抽選</span>
-        </div>
+        <div class="itemIcon"></div>
+        <div class="itemIcon"></div>
+        <div class="runeIcon" id="runeIcon"></div>
+        <div class="spellIcon"></div>
+        <div class="spellIcon"></div>
     </div>
 
     <script>
         let championList = [];
         let itemList = [];
+        let spellList = [];
+        let runeList = [];
         let imageVersion = "15.10.1";
-        const spriteBasePath = "asset/dragontail"; // 本地圖庫根路徑
+        const spriteBasePath = "asset/dragontail";
 
-        // 載入英雄資料
-        fetch('asset/dragontail/15.10.1/data/zh_TW/champion.json')
+        // 載入英雄
+        fetch(`${spriteBasePath}/15.10.1/data/zh_TW/champion.json`)
             .then(res => res.json())
             .then(json => {
                 championList = Object.values(json.data);
                 imageVersion = json.version;
             });
 
-        // 載入裝備資料
-        fetch('asset/dragontail/15.10.1/data/zh_TW/item.json')
+        // 載入裝備
+        fetch(`${spriteBasePath}/15.10.1/data/zh_TW/item.json`)
             .then(res => res.json())
             .then(json => {
                 itemList = Object.entries(json.data)
                     .map(([id, item]) => ({ id, ...item }))
                     .filter(item =>
                         item.gold.total >= 2200 &&
-                        item.gold.purchasable === true &&
-                        item.maps &&
-                        item.maps["12"] === true
+                        item.gold.purchasable === true
                     );
             });
 
-        // 點擊按鈕抽選
+        // 載入召喚師技能
+        fetch(`${spriteBasePath}/15.10.1/data/zh_TW/summoner.json`)
+            .then(res => res.json())
+            .then(json => {
+                spellList = Object.values(json.data);
+            });
+
+        // 載入符文
+        fetch(`${spriteBasePath}/15.10.1/data/zh_TW/runesReforged.json`)
+            .then(res => res.json())
+            .then(json => {
+                runeList = json;
+            });
+
         document.getElementById("drawButton").addEventListener("click", () => {
-    // 抽英雄
-    if (championList.length === 0) return;
-    const selected = championList[Math.floor(Math.random() * championList.length)];
-    const { sprite, x, y } = selected.image;
 
-    const icon = document.getElementById("championIcon");
-    icon.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/sprite/${sprite})`;
-    icon.style.backgroundPosition = `-${x}px -${y}px`;
+            const selectedMap = document.getElementById("mapSelect").value;
+            // 抽英雄
+            const selectedChampion = championList[Math.floor(Math.random() * championList.length)];
+            const { sprite, x, y } = selectedChampion.image;
+            const championIcon = document.getElementById("championIcon");
+            championIcon.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/sprite/${sprite})`;
+            championIcon.style.backgroundPosition = `-${x}px -${y}px`;
 
-    document.getElementById("championText").textContent =
-        `${selected.name}（${selected.title}）`;
+            // 抽裝備
+            const shuffledItems = [...itemList].filter(item => item.maps && item.maps[selectedMap] === true).sort(() => 0.5 - Math.random()).slice(0, 2);
+            document.querySelectorAll('.itemIcon').forEach((el, i) => {
+                const item = shuffledItems[i];
+                el.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/sprite/${item.image.sprite})`;
+                el.style.backgroundPosition = `-${item.image.x}px -${item.image.y}px`;
+            });
 
-    // 抽裝備
-    if (itemList.length >= 2) {
-        const shuffled = [...itemList].sort(() => 0.5 - Math.random());
-        const selectedItems = shuffled.slice(0, 2);
+            // 抽主要天賦（隨機 runeList 中的一個 style）
+            const primaryStyle = runeList[Math.floor(Math.random() * runeList.length)];
+            const slot0Runes = primaryStyle.slots[0].runes;
+            const selectedRune = slot0Runes[Math.floor(Math.random() * slot0Runes.length)];
+            const primaryRuneIcon = document.getElementById("runeIcon");
+            primaryRuneIcon.style.backgroundImage =
+                `url(${spriteBasePath}/img/${selectedRune.icon})`;
+            primaryRuneIcon.style.backgroundPosition = "center";
 
-        const itemListDom = document.getElementById("itemList");
-        itemListDom.innerHTML = ""; // 清空原本的內容
-
-        for (const item of selectedItems) {
-            const itemDiv = document.createElement("div");
-            itemDiv.classList.add("item");
-
-            const iconDiv = document.createElement("div");
-            iconDiv.classList.add("itemIcon");
-            
-            iconDiv.style.backgroundImage =
-                `url(${spriteBasePath}/${imageVersion}/img/sprite/${item.image.sprite})`;
-                console.log(`backgroundImage`, iconDiv.style.backgroundImage);
-            iconDiv.style.backgroundPosition = `-${item.image.x}px -${item.image.y}px`;
-
-            const nameSpan = document.createElement("span");
-            nameSpan.textContent = item.name;
-
-            itemDiv.appendChild(iconDiv);
-            itemDiv.appendChild(nameSpan);
-            itemListDom.appendChild(itemDiv);
-        }
-    }
-});
+            // 抽召喚師技能 2 個
+            const shuffledSpells = [...spellList].sort(() => 0.5 - Math.random()).slice(0, 2);
+            document.querySelectorAll('.spellIcon').forEach((el, i) => {
+                const spell = shuffledSpells[i];
+                el.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/spell/${spell.image.full})`;
+                el.style.backgroundPosition = "center";
+            });
+        });
     </script>
-
 </body>
 
 </html>
