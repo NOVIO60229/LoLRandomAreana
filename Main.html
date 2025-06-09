@@ -26,6 +26,9 @@
         <option value="30">競技場</option>
     </select>
 
+    <label for="groupCount">人數：</label>
+    <input type="number" id="groupCount" value="1" min="1" max="10" style="width: 50px;">
+
     <button id="drawButton">抽選</button>
 
     <div class="iconBox" id="iconBox">
@@ -89,40 +92,69 @@
         document.getElementById("drawButton").addEventListener("click", () => {
 
             const selectedMap = document.getElementById("mapSelect").value;
-            console.log(`Selected Map ID: ${selectedMap}`);
-            
-            // 抽英雄
-            const selectedChampion = championList[Math.floor(Math.random() * championList.length)];
-            const { sprite, x, y } = selectedChampion.image;
-            const championIcon = document.getElementById("championIcon");
-            championIcon.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/sprite/${sprite})`;
-            championIcon.style.backgroundPosition = `-${x}px -${y}px`;
-
-            // 抽裝備
-            const shuffledItems = [...itemList].filter(item => item.maps && item.maps[selectedMap] === true).sort(() => 0.5 - Math.random()).slice(0, 2);
-            document.querySelectorAll('.itemIcon').forEach((el, i) => {
-                const item = shuffledItems[i];
-                el.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/sprite/${item.image.sprite})`;
-                el.style.backgroundPosition = `-${item.image.x}px -${item.image.y}px`;
-            });
-
-            // 抽主要天賦（隨機 runeList 中的一個 style）
-            const primaryStyle = runeList[Math.floor(Math.random() * runeList.length)];
-            const slot0Runes = primaryStyle.slots[0].runes;
-            const selectedRune = slot0Runes[Math.floor(Math.random() * slot0Runes.length)];
-            const primaryRuneIcon = document.getElementById("runeIcon");
-            primaryRuneIcon.style.backgroundImage =
-                `url(${spriteBasePath}/img/${selectedRune.icon})`;
-            primaryRuneIcon.style.backgroundPosition = "center";
-
-            // 抽召喚師技能 2 個
             const mapName = mapIdToName[selectedMap] || "ARAM";
-            const shuffledSpells = [...spellList].filter(spell => spell.modes && spell.modes.includes(mapName)).sort(() => 0.5 - Math.random()).slice(0, 2);
-            document.querySelectorAll('.spellIcon').forEach((el, i) => {
-                const spell = shuffledSpells[i];
-                el.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/spell/${spell.image.full})`;
-                el.style.backgroundPosition = "center";
-            });
+            const groupCount = parseInt(document.getElementById("groupCount").value, 10);
+
+            //隨機打亂英雄，待後續取出
+            let remainingChampions = [...championList].sort(() => 0.5 - Math.random());
+            //防止抽超過英雄上限
+            if (groupCount > championList.length) {
+                alert("組數超過可用英雄數量！");
+                return;
+            }
+
+            const iconBox = document.getElementById("iconBox");
+            iconBox.innerHTML = ""; // 清空舊的
+
+            for (let g = 0; g < groupCount; g++) {
+                const groupDiv = document.createElement("div");
+                groupDiv.className = "iconGroup";
+
+                // 抽英雄
+                const champion = remainingChampions.splice(0, 1)[0];
+                const champDiv = document.createElement("div");
+                champDiv.className = "championIcon";
+                champDiv.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/sprite/${champion.image.sprite})`;
+                champDiv.style.backgroundPosition = `-${champion.image.x}px -${champion.image.y}px`;
+                groupDiv.appendChild(champDiv);
+
+                // 抽裝備
+                const items = [...itemList]
+                    .filter(item => item.maps && item.maps[selectedMap] === true)
+                    .sort(() => 0.5 - Math.random())
+                    .slice(0, 2);
+                for (const item of items) {
+                    const itemDiv = document.createElement("div");
+                    itemDiv.className = "itemIcon";
+                    itemDiv.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/sprite/${item.image.sprite})`;
+                    itemDiv.style.backgroundPosition = `-${item.image.x}px -${item.image.y}px`;
+                    groupDiv.appendChild(itemDiv);
+                }
+
+                // 抽符文
+                const primary = runeList[Math.floor(Math.random() * runeList.length)];
+                const rune = primary.slots[0].runes[Math.floor(Math.random() * primary.slots[0].runes.length)];
+                const runeDiv = document.createElement("div");
+                runeDiv.className = "runeIcon";
+                runeDiv.style.backgroundImage = `url(${spriteBasePath}/img/${rune.icon})`;
+                runeDiv.style.backgroundPosition = "center";
+                groupDiv.appendChild(runeDiv);
+
+                // 抽召喚師技能
+                const spells = [...spellList]
+                    .filter(spell => spell.modes && spell.modes.includes(mapName))
+                    .sort(() => 0.5 - Math.random())
+                    .slice(0, 2);
+                for (const spell of spells) {
+                    const spellDiv = document.createElement("div");
+                    spellDiv.className = "spellIcon";
+                    spellDiv.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/spell/${spell.image.full})`;
+                    spellDiv.style.backgroundPosition = "center";
+                    groupDiv.appendChild(spellDiv);
+                }
+
+                iconBox.appendChild(groupDiv);
+            }
         });
     </script>
 </body>

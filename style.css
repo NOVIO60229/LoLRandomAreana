@@ -21,3 +21,10 @@
   background-size: contain;
   image-rendering: auto;
 }
+
+.iconBox {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+  background-color: #f0f0f0;
+}
