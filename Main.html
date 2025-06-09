@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 
+
 <head>
     <meta charset="UTF-8">
     <title>LOL 精靈圖抽選</title>
@@ -37,6 +38,13 @@
     </div>
 
     <script>
+
+        const mapIdToName = {
+            12: "ARAM",
+            11: "CLASSIC",
+            30: "CHERRY"
+        };
+
         let championList = [];
         let itemList = [];
         let spellList = [];
@@ -81,6 +89,8 @@
         document.getElementById("drawButton").addEventListener("click", () => {
 
             const selectedMap = document.getElementById("mapSelect").value;
+            console.log(`Selected Map ID: ${selectedMap}`);
+            
             // 抽英雄
             const selectedChampion = championList[Math.floor(Math.random() * championList.length)];
             const { sprite, x, y } = selectedChampion.image;
@@ -106,7 +116,8 @@
             primaryRuneIcon.style.backgroundPosition = "center";
 
             // 抽召喚師技能 2 個
-            const shuffledSpells = [...spellList].sort(() => 0.5 - Math.random()).slice(0, 2);
+            const mapName = mapIdToName[selectedMap] || "ARAM";
+            const shuffledSpells = [...spellList].filter(spell => spell.modes && spell.modes.includes(mapName)).sort(() => 0.5 - Math.random()).slice(0, 2);
             document.querySelectorAll('.spellIcon').forEach((el, i) => {
                 const spell = shuffledSpells[i];
                 el.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/spell/${spell.image.full})`;
