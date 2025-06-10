@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>LOL 精靈圖抽選</title>
+    <title>LOL RandomArena</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -18,6 +18,15 @@
 
     <label for="characterCount">人數：</label>
     <input type="number" id="characterCount" value="12" min="1" max="10" style="width: 50px;">
+
+    <label>
+        <input type="checkbox" id="guaranteedFlashToggle" checked>
+        一定有閃
+    </label>
+    <label>
+        <input type="checkbox" id="dFlashToggle" checked>
+        D閃
+    </label>
 
     <button id="drawButton">抽選</button>
 
@@ -92,7 +101,7 @@
                 return;
             }
 
-            
+
             // 清空舊資料
             const characterGroupPool = document.getElementById("characterGroupPool");
             const blueSideDiv = document.getElementById("blueSide");
@@ -143,10 +152,31 @@
                 groupDiv.appendChild(runeDiv);
 
                 // 抽召喚師技能
-                const spells = [...spellList]
-                    .filter(spell => spell.modes && spell.modes.includes(mapName))
-                    .sort(() => 0.5 - Math.random())
-                    .slice(0, 2);
+                const dFlashEnabled = document.getElementById("dFlashToggle").checked;
+                const guaranteedFlash = document.getElementById("guaranteedFlashToggle").checked;
+
+                const flashSpell = spellList.find(spell => spell.id === "SummonerFlash");
+                // 過濾地圖可用，並移除 flash，用來手動插入
+                const filteredSpells = [...spellList].filter(spell => spell.modes && spell.modes.includes(mapName)).filter(spell => spell.id !== "SummonerFlash");
+                let spells = [];
+
+                if (guaranteedFlash && flashSpell) {
+                    const otherSpell = filteredSpells.sort(() => 0.5 - Math.random())[0];
+                    spells = dFlashEnabled ? [flashSpell, otherSpell] : [otherSpell, flashSpell];
+                }
+                else {
+                    spells = [...filteredSpells, flashSpell]
+                        .filter(Boolean)
+                        .sort(() => 0.5 - Math.random())
+                        .slice(0, 2);
+
+                    // 如果抽到 flash，就根據 D Flash 決定順序
+                    const hasFlash = spells.some(spell => spell.id === "SummonerFlash");
+                    if (hasFlash && dFlashEnabled) {
+                        spells.sort((a, b) => (a.id === "SummonerFlash" ? -1 : 1));
+                    }
+                }
+
                 for (const spell of spells) {
                     const spellDiv = document.createElement("div");
                     spellDiv.className = "spellIcon";
