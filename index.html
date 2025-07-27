@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <title>LOL RandomArena</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
@@ -28,6 +28,11 @@
         D閃
     </label>
 
+    <label>
+        <input type="checkbox" id="toggleBanVisibility" checked>
+        顯示已禁用角色
+    </label>
+
     <button id="drawButton">抽選</button>
 
 
@@ -37,192 +42,7 @@
         <div class="redSide" id="redSide"></div>
     </div>
 
-    <script>
-
-        const mapIdToName = {
-            12: "ARAM",
-            11: "CLASSIC",
-            30: "CHERRY"
-        };
-
-        let championList = [];
-        let itemList = [];
-        let spellList = [];
-        let runeList = [];
-        let imageVersion = "15.10.1";
-        const spriteBasePath = "asset/dragontail";
-
-        // 載入英雄
-        fetch(`${spriteBasePath}/15.10.1/data/zh_TW/champion.json`)
-            .then(res => res.json())
-            .then(json => {
-                championList = Object.values(json.data);
-                imageVersion = json.version;
-            });
-
-        // 載入裝備
-        fetch(`${spriteBasePath}/15.10.1/data/zh_TW/item.json`)
-            .then(res => res.json())
-            .then(json => {
-                itemList = Object.entries(json.data)
-                    .map(([id, item]) => ({ id, ...item }))
-                    .filter(item =>
-                        item.gold.total >= 2200 &&
-                        item.gold.purchasable === true
-                    );
-            });
-
-        // 載入召喚師技能
-        fetch(`${spriteBasePath}/15.10.1/data/zh_TW/summoner.json`)
-            .then(res => res.json())
-            .then(json => {
-                spellList = Object.values(json.data);
-            });
-
-        // 載入符文
-        fetch(`${spriteBasePath}/15.10.1/data/zh_TW/runesReforged.json`)
-            .then(res => res.json())
-            .then(json => {
-                runeList = json;
-            });
-
-        // 抽選按鈕邏輯
-        document.getElementById("drawButton").addEventListener("click", () => {
-
-            const selectedMap = document.getElementById("mapSelect").value;
-            const mapName = mapIdToName[selectedMap] || "ARAM";
-            const characterCount = parseInt(document.getElementById("characterCount").value, 10);
-
-            //隨機打亂英雄，待後續取出
-            let remainingChampions = [...championList].sort(() => 0.5 - Math.random());
-            //防止抽超過英雄上限
-            if (characterCount > championList.length) {
-                alert("組數超過可用英雄數量！");
-                return;
-            }
-
-
-            // 清空舊資料
-            const characterGroupPool = document.getElementById("characterGroupPool");
-            const blueSideDiv = document.getElementById("blueSide");
-            const redSideDiv = document.getElementById("redSide");
-            characterGroupPool.innerHTML = "";
-            blueSideDiv.innerHTML = "";
-            redSideDiv.innerHTML = "";
-
-
-            for (let g = 0; g < characterCount; g++) {
-                const groupDiv = document.createElement("div");
-                groupDiv.className = "characterGroup";
-
-                groupDiv.id = `characterGroup-${g}`;
-                groupDiv.draggable = true;
-                groupDiv.addEventListener("dragstart", (e) => {
-                    e.dataTransfer.setData("text/plain", groupDiv.id);
-                });
-
-                // 抽英雄
-                const champion = remainingChampions.splice(0, 1)[0];
-                const champDiv = document.createElement("div");
-                champDiv.className = "championIcon";
-                champDiv.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/sprite/${champion.image.sprite})`;
-                champDiv.style.backgroundPosition = `-${champion.image.x}px -${champion.image.y}px`;
-                groupDiv.appendChild(champDiv);
-
-                // 抽裝備
-                const items = [...itemList]
-                    .filter(item => item.maps && item.maps[selectedMap] === true)
-                    .sort(() => 0.5 - Math.random())
-                    .slice(0, 2);
-                for (const item of items) {
-                    const itemDiv = document.createElement("div");
-                    itemDiv.className = "itemIcon";
-                    itemDiv.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/sprite/${item.image.sprite})`;
-                    itemDiv.style.backgroundPosition = `-${item.image.x}px -${item.image.y}px`;
-                    groupDiv.appendChild(itemDiv);
-                }
-
-                // 抽符文
-                const primary = runeList[Math.floor(Math.random() * runeList.length)];
-                const rune = primary.slots[0].runes[Math.floor(Math.random() * primary.slots[0].runes.length)];
-                const runeDiv = document.createElement("div");
-                runeDiv.className = "runeIcon";
-                runeDiv.style.backgroundImage = `url(${spriteBasePath}/img/${rune.icon})`;
-                runeDiv.style.backgroundPosition = "center";
-                groupDiv.appendChild(runeDiv);
-
-                // 抽召喚師技能
-                const dFlashEnabled = document.getElementById("dFlashToggle").checked;
-                const guaranteedFlash = document.getElementById("guaranteedFlashToggle").checked;
-
-                const flashSpell = spellList.find(spell => spell.id === "SummonerFlash");
-                // 過濾地圖可用，並移除 flash，用來手動插入
-                const filteredSpells = [...spellList].filter(spell => spell.modes && spell.modes.includes(mapName)).filter(spell => spell.id !== "SummonerFlash");
-                let spells = [];
-
-                if (guaranteedFlash && flashSpell) {
-                    const otherSpell = filteredSpells.sort(() => 0.5 - Math.random())[0];
-                    spells = dFlashEnabled ? [flashSpell, otherSpell] : [otherSpell, flashSpell];
-                }
-                else {
-                    spells = [...filteredSpells, flashSpell]
-                        .filter(Boolean)
-                        .sort(() => 0.5 - Math.random())
-                        .slice(0, 2);
-
-                    // 如果抽到 flash，就根據 D Flash 決定順序
-                    const hasFlash = spells.some(spell => spell.id === "SummonerFlash");
-                    if (hasFlash && dFlashEnabled) {
-                        spells.sort((a, b) => (a.id === "SummonerFlash" ? -1 : 1));
-                    }
-                }
-
-                for (const spell of spells) {
-                    const spellDiv = document.createElement("div");
-                    spellDiv.className = "spellIcon";
-                    spellDiv.style.backgroundImage = `url(${spriteBasePath}/${imageVersion}/img/spell/${spell.image.full})`;
-                    spellDiv.style.backgroundPosition = "center";
-                    groupDiv.appendChild(spellDiv);
-                }
-
-                //ban按鈕
-                const banButton = document.createElement("button");
-                banButton.className = "banButton";
-                banButton.textContent = "禁用";
-                banButton.addEventListener("click", () => {
-                    groupDiv.classList.add("banned");
-                });
-                groupDiv.appendChild(banButton);
-
-                characterGroupPool.appendChild(groupDiv);
-            }
-        });
-
-        //紅藍方拖曳事件
-        ["redSide", "blueSide"].forEach(sideId => {
-            const side = document.getElementById(sideId);
-
-            side.addEventListener("dragover", (e) => {
-                e.preventDefault(); // 必須要有，否則 drop 不會觸發
-                side.classList.add("drag-over");
-            });
-
-            side.addEventListener("dragleave", () => {
-                side.classList.remove("drag-over");
-            });
-
-            side.addEventListener("drop", (e) => {
-                e.preventDefault();
-                side.classList.remove("drag-over");
-
-                const draggedId = e.dataTransfer.getData("text/plain");
-                const draggedElement = document.getElementById(draggedId);
-                if (draggedElement) {
-                    side.appendChild(draggedElement);
-                }
-            });
-        });
-    </script>
+    <script type="module" src="js/main.js"></script>
 </body>
 
 </html>
